@@ -71,3 +71,63 @@
     display: block;
   }
 }
+
+/* Workspace detail specific styles */
+.workspace-detail-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.workspace-detail-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+.workspace-detail-sidebar {
+  width: 320px;
+  background: #1f2937;
+  border-left: 1px solid hsl(var(--border));
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .workspace-detail-sidebar {
+    display: none;
+  }
+}
+
+/* Tab styling for workspace detail */
+.workspace-tabs .tabs-list {
+  background: transparent;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.workspace-tabs .tabs-trigger {
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.workspace-tabs .tabs-trigger[data-state="active"] {
+  border-bottom-color: hsl(var(--primary));
+  background: transparent;
+}
+
+/* Empty state styling */
+.empty-state-card {
+  border: 2px dashed hsl(var(--muted-foreground) / 0.3);
+  background: transparent;
+}
+
+.empty-state-icon {
+  width: 96px;
+  height: 96px;
+  background: hsl(var(--muted-foreground) / 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}

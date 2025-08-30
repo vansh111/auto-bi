@@ -1,56 +1,238 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Settings, Users, Database, Globe, Key, CheckCircle, Clock, Plus } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Settings, 
+  Users, 
+  Database, 
+  Globe, 
+  Key, 
+  CheckCircle, 
+  Clock, 
+  Plus, 
+  Search, 
+  Filter, 
+  Heart,
+  User,
+  Edit,
+  Trash,
+  Zap,
+  Loader2
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import DatasourceOnboarding from "@/components/DatasourceOnboarding";
 
 // Mock workspace data - in real app this would come from API
 const mockWorkspace = {
-  id: "kaurav-123",
-  name: "Kaurav",
+  id: "sample-123",
+  name: "sample",
   organization: "D&AI",
-  tags: ["test", "dummy"],
-  description: "Some Desc, something",
-  publishedDate: "Apr 10, 2025",
-  lastModified: "May 19, 2025",
-  stats: { dataSource: 11, domain: 2, user: 1, pendingApproval: 1 },
+  tags: ["sample"],
+  description: "Sample workspace for testing",
+  publishedDate: "Aug 26, 2025",
+  lastModified: "May 22, 2025",
+  stats: { dataSource: 0, domain: 0, user: 1, pendingApproval: 0 },
   isFavorite: true,
   isApproved: true,
-  embeddingProvider: "OpenAI Embeddings",
-  defaultLLMProvider: "OpenAI GPT-4",
   visibility: "private"
 };
+
+// Mock video call participants
+const participants = [
+  {
+    id: 1,
+    name: "Kushagra Sharma",
+    avatar: "KS",
+    isOnline: true,
+    hasVideo: true
+  },
+  {
+    id: 2,
+    name: "Vansh Aggarwal",
+    avatar: "VA",
+    isOnline: true,
+    hasVideo: true
+  },
+  {
+    id: 3,
+    name: "Srilikhita Balla",
+    avatar: "SB",
+    isOnline: true,
+    hasVideo: false
+  },
+  {
+    id: 4,
+    name: "Rahul Gupta",
+    avatar: "RG",
+    isOnline: true,
+    hasVideo: true
+  },
+  {
+    id: 5,
+    name: "Ayush Rajput",
+    avatar: "AR",
+    isOnline: true,
+    hasVideo: false
+  }
+];
 
 export default function WorkspaceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("connection");
-  const [connectionStatus, setConnectionStatus] = useState<'pending' | 'connected' | 'error'>('pending');
+  const [activeTab, setActiveTab] = useState("connections");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [connections, setConnections] = useState<any[]>([]);
+  const [dataSources, setDataSources] = useState<any[]>([
+    {
+      id: "ds-1",
+      name: "workspace",
+      tags: ["configurat...", "embedding", "llm"],
+      description: "Stores configurations, including default LLM and embedding settings, for organizations within the sy... Show more",
+      lastUpdate: "26th Aug 2025, 7:42AM",
+      sampleTest: "sample-test",
+      visibility: "public",
+      score: 75,
+      metadataStatus: {
+        testConnectivity: "success",
+        fetchedSchemaDefinition: "success",
+        columnMetadataStatus: "success",
+        generateEmbeddings: "success"
+      },
+      lastMetadataRefresh: "26th Aug 2025, 7:42AM"
+    },
+    {
+      id: "ds-2",
+      name: "datasource",
+      tags: ["metadata", "refresh", "sources"],
+      description: "Tracks data sources, their configuration, and refresh schedules within a workspace, including metada.... Show more",
+      lastUpdate: "26th Aug 2025, 7:42AM",
+      sampleTest: "sample-test",
+      visibility: "public",
+      score: 75,
+      metadataStatus: {
+        testConnectivity: "success",
+        fetchedSchemaDefinition: "success",
+        columnMetadataStatus: "success",
+        generateEmbeddings: "loading"
+      },
+      lastMetadataRefresh: "26th Aug 2025, 7:42AM"
+    },
+    {
+      id: "ds-3",
+      name: "domain",
+      tags: ["connection", "metadata", "workspace"],
+      description: "Stores configurations, validation statuses, and metadata refresh information for workspace connectio... Show more",
+      lastUpdate: "26th Aug 2025, 7:42AM",
+      sampleTest: "sample-test",
+      visibility: "public",
+      score: 75,
+      metadataStatus: {
+        testConnectivity: "success",
+        fetchedSchemaDefinition: "success",
+        columnMetadataStatus: "success",
+        generateEmbeddings: "success"
+      },
+      lastMetadataRefresh: "26th Aug 2025, 7:42AM"
+    },
+    {
+      id: "ds-4",
+      name: "user",
+      tags: ["account", "authentica...", "user"],
+      description: "Stores user account information, including credentials, status, and roles, for system access and aut... Show more",
+      lastUpdate: "26th Aug 2025, 7:42AM",
+      sampleTest: "sample-test",
+      visibility: "public",
+      score: 75,
+      metadataStatus: {
+        testConnectivity: "success",
+        fetchedSchemaDefinition: "success",
+        columnMetadataStatus: "success",
+        generateEmbeddings: "success"
+      },
+      lastMetadataRefresh: "26th Aug 2025, 7:42AM"
+    },
+    {
+      id: "ds-5",
+      name: "user_workspace_link",
+      tags: ["access", "permission...", "workspaces"],
+      description: "Tracks user roles and access permissions within specific workspaces, including domain-level privileg... Show more",
+      lastUpdate: "26th Aug 2025, 7:42AM",
+      sampleTest: "sample-test",
+      visibility: "public",
+      score: 75,
+      metadataStatus: {
+        testConnectivity: "success",
+        fetchedSchemaDefinition: "success",
+        columnMetadataStatus: "success",
+        generateEmbeddings: "success"
+      },
+      lastMetadataRefresh: "26th Aug 2025, 7:42AM"
+    },
+    {
+      id: "ds-6",
+      name: "column_embedding_768",
+      tags: ["column", "embeddings", "vectors"],
+      description: "Stores vector embeddings for data elements, associating them with specific data sources and columns.Show more",
+      lastUpdate: "26th Aug 2025, 7:42AM",
+      sampleTest: "sample-test",
+      visibility: "public",
+      score: 75,
+      metadataStatus: {
+        testConnectivity: "success",
+        fetchedSchemaDefinition: "success",
+        columnMetadataStatus: "success",
+        generateEmbeddings: "success"
+      },
+      lastMetadataRefresh: "26th Aug 2025, 7:42AM"
+    }
+  ]);
 
   const handleBack = () => {
     navigate("/");
   };
 
-  const handleAddDataSource = () => {
-    navigate(`/workspace/${id}/add-data-source`);
+  const handleEdit = () => {
+    console.log("Edit workspace");
   };
 
-  // Simulate connection check on component mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setConnectionStatus('connected');
-    }, 3000); // Change to connected after 3 seconds
+  const handleDelete = () => {
+    console.log("Delete workspace");
+  };
 
-    return () => clearTimeout(timer);
-  }, []);
+  const handleFavorite = () => {
+    console.log("Toggle favorite");
+  };
+
+  const handleConnectionComplete = (connectionData: any) => {
+    setConnections(prev => [...prev, connectionData]);
+  };
+
+  const handleEditDataSource = (dataSourceId: string) => {
+    console.log("Edit data source:", dataSourceId);
+  };
+
+  const handleDeleteDataSource = (dataSourceId: string) => {
+    console.log("Delete data source:", dataSourceId);
+    setDataSources(prev => prev.filter(ds => ds.id !== dataSourceId));
+  };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
+    <>
+      {showOnboarding && (
+        <DatasourceOnboarding 
+          onClose={() => setShowOnboarding(false)} 
+          onConnectionComplete={handleConnectionComplete}
+        />
+      )}
+      <div className="min-h-screen bg-background text-foreground">
+        {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b border-border/50 sticky top-0 z-50">
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+        <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -59,263 +241,403 @@ export default function WorkspaceDetail() {
               className="hover:bg-accent transition-colors"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
-              Back to Dashboard
+              Back
             </Button>
             <div className="h-6 w-px bg-border"></div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">{mockWorkspace.name}</h1>
-              <p className="text-sm text-muted-foreground">{mockWorkspace.organization}</p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Owned Workspace</span>
+              <span>•</span>
+              <span className="text-foreground font-medium">{mockWorkspace.name}</span>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="border-success/30 bg-success/10 text-success">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              Approved
-            </Badge>
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleEdit}>
+              <User className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleEdit}>
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleDelete}>
+              <Trash className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-6 lg:p-8">
-        {/* Workspace Overview */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5 text-primary" />
-                Workspace Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{mockWorkspace.stats.dataSource}</div>
-                  <div className="text-sm text-muted-foreground">Data Sources</div>
+      <div className="p-6">
+          {/* Workspace Details */}
+          <div className="mb-8">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold text-foreground">{mockWorkspace.name}</h1>
+                  <Badge variant="secondary" className="text-sm">
+                    {mockWorkspace.name}
+                  </Badge>
                 </div>
-                <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <div className="text-2xl font-bold text-success">{mockWorkspace.stats.domain}</div>
-                  <div className="text-sm text-muted-foreground">Domains</div>
-                </div>
-                <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <div className="text-2xl font-bold text-warning">{mockWorkspace.stats.user}</div>
-                  <div className="text-sm text-muted-foreground">Users</div>
-                </div>
-                <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <div className="text-2xl font-bold text-destructive">{mockWorkspace.stats.pendingApproval}</div>
-                  <div className="text-sm text-muted-foreground">Pending Approval</div>
-                </div>
+                <p className="text-muted-foreground mb-2">
+                  Organization: <span className="font-semibold text-foreground">{mockWorkspace.organization}</span>
+                </p>
+                <p className="text-muted-foreground mb-2">{mockWorkspace.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  Published on: {mockWorkspace.publishedDate} | Last modified on: {mockWorkspace.lastModified}
+                </p>
               </div>
-              
-              <div className="pt-4 border-t border-border/50">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold mb-2">Description</h3>
-                    <p className="text-muted-foreground">{mockWorkspace.description}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">Configuration</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Embedding Provider:</span>
-                        <span>{mockWorkspace.embeddingProvider}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Default LLM:</span>
-                        <span>{mockWorkspace.defaultLLMProvider}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Visibility:</span>
-                        <Badge variant={mockWorkspace.visibility === 'private' ? 'secondary' : 'outline'}>
-                          {mockWorkspace.visibility === 'private' ? 'Private' : 'Public'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleFavorite}
+                className={`h-10 w-10 p-0 ${
+                  mockWorkspace.isFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Heart className={`h-5 w-5 ${mockWorkspace.isFavorite ? 'fill-current' : ''}`} />
+              </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-4 gap-6 mb-8">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground mb-1">
+                  {mockWorkspace.stats.dataSource}
                 </div>
-                
-                <div className="mt-4 pt-4 border-t border-border/50">
-                  <div className="flex flex-wrap gap-2">
-                    {mockWorkspace.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+                <div className="text-sm text-muted-foreground">Data source</div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground mb-1">
+                  {mockWorkspace.stats.domain}
+                </div>
+                <div className="text-sm text-muted-foreground">Domain</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground mb-1">
+                  {mockWorkspace.stats.user}
+                </div>
+                <div className="text-sm text-muted-foreground">User</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground mb-1">
+                  {mockWorkspace.stats.pendingApproval}
+                </div>
+                <div className="text-sm text-muted-foreground">Pending Approval</div>
+              </div>
+            </div>
+          </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="connection" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Connection
-            </TabsTrigger>
-            <TabsTrigger value="data-sources" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              Data Sources
-            </TabsTrigger>
-            <TabsTrigger value="domains" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Domains
-            </TabsTrigger>
-            <TabsTrigger value="api-tokens" className="flex items-center gap-2">
-              <Key className="h-4 w-4" />
-              Client API Tokens
-            </TabsTrigger>
-          </TabsList>
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="workspace-tabs space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="connections" className="flex items-center gap-2">
+                CONNECTIONS ({mockWorkspace.stats.dataSource})
+              </TabsTrigger>
+              <TabsTrigger value="data-sources" className="flex items-center gap-2">
+                DATA SOURCES ({dataSources.length})
+              </TabsTrigger>
+              <TabsTrigger value="domains" className="flex items-center gap-2">
+                DOMAINS ({mockWorkspace.stats.domain})
+              </TabsTrigger>
+              <TabsTrigger value="api-tokens" className="flex items-center gap-2">
+                CLIENT API TOKENS
+              </TabsTrigger>
+              <TabsTrigger value="approval" className="flex items-center gap-2">
+                MY APPROVAL
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Connection Tab */}
-          <TabsContent value="connection" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Connection Status
-                  <Button size="sm" onClick={handleAddDataSource}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Data Source
+            {/* Connections Tab */}
+            <TabsContent value="connections" className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex-1 max-w-md">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4" />
                   </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+                  <Button size="sm" onClick={() => setShowOnboarding(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+
+              {connections.length === 0 ? (
+                <Card className="empty-state-card">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <div className="empty-state-icon">
+                      <Zap className="h-12 w-12 text-muted-foreground/50" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                      No Connections yet!
+                    </h3>
+                    <p className="text-sm text-muted-foreground text-center max-w-md">
+                      Get started by adding your first connection to this workspace.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
                 <div className="space-y-4">
-                  <div className={`flex items-center justify-between p-4 rounded-lg border ${
-                    connectionStatus === 'connected' 
-                      ? 'bg-success/10 border-success/20' 
-                      : connectionStatus === 'error'
-                      ? 'bg-destructive/10 border-destructive/20'
-                      : 'bg-warning/10 border-warning/20'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        connectionStatus === 'connected' 
-                          ? 'bg-success animate-pulse' 
-                          : connectionStatus === 'error'
-                          ? 'bg-destructive'
-                          : 'bg-warning animate-pulse'
-                      }`}></div>
-                      <span className="font-medium">Database Connection</span>
-                    </div>
-                    <Badge variant="outline" className={
-                      connectionStatus === 'connected' 
-                        ? 'border-success text-success' 
-                        : connectionStatus === 'error'
-                        ? 'border-destructive text-destructive'
-                        : 'border-warning text-warning'
-                    }>
-                      {connectionStatus === 'connected' ? 'Connected' : connectionStatus === 'error' ? 'Error' : 'Pending'}
-                    </Badge>
+                  {connections.map((connection) => (
+                    <Card key={connection.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                              {connection.type === 'postgres' ? (
+                                <div className="text-2xl">🐘</div>
+                              ) : connection.type === 'bigquery' ? (
+                                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+                                  <span className="text-white font-bold text-sm">Q</span>
+                                </div>
+                              ) : (
+                                <Database className="h-6 w-6 text-blue-600" />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-foreground">{connection.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {connection.source} • {connection.tables.length} tables
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="bg-green-100 text-green-700">
+                              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                              Connected
+                            </Badge>
+                            <Button variant="ghost" size="sm">
+                              <Settings className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Data Sources Tab */}
+            <TabsContent value="data-sources" className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex-1 max-w-md">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search"
+                      className="pl-10"
+                    />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Data Sources Tab */}
-          <TabsContent value="data-sources" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Data Sources
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4" />
+                  </Button>
                   <Button size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Data Source
                   </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Database className="h-5 w-5 text-primary" />
-                        <div>
-                          <div className="font-medium">Data Source {i + 1}</div>
-                          <div className="text-sm text-muted-foreground">Last updated: 2 hours ago</div>
-                        </div>
-                      </div>
-                      <Badge variant="outline">Active</Badge>
-                    </div>
-                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
 
-          {/* Domains Tab */}
-          <TabsContent value="domains" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Domains
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Domain
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {Array.from({ length: 3 }, (_, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Globe className="h-5 w-5 text-success" />
-                        <div>
-                          <div className="font-medium">Domain {i + 1}</div>
-                          <div className="text-sm text-muted-foreground">Schema: {i + 1} tables</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {dataSources.map((dataSource) => (
+                  <Card key={dataSource.id} className="hover:shadow-lg transition-all duration-200">
+                    <CardContent className="p-6">
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <Database className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-foreground text-lg">{dataSource.name}</h3>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {dataSource.tags.map((tag: string, index: number) => (
+                                <Badge key={index} variant="secondary" className="text-xs px-2 py-1 bg-gray-100 text-gray-700">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                          <span className="text-white text-sm font-semibold">{dataSource.score}</span>
                         </div>
                       </div>
-                      <Badge variant="outline">Configured</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* API Tokens Tab */}
-          <TabsContent value="api-tokens" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Client API Tokens
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Generate Token
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {Array.from({ length: 2 }, (_, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Key className="h-5 w-5 text-warning" />
-                        <div>
-                          <div className="font-medium">API Token {i + 1}</div>
-                          <div className="text-sm text-muted-foreground">Created: {i + 1} day ago</div>
+                      {/* Information Section */}
+                      <div className="space-y-3 mb-4">
+                        <div className="text-sm text-muted-foreground">
+                          Last update: {dataSource.lastUpdate}
+                        </div>
+                        <p className="text-sm text-foreground leading-relaxed">
+                          {dataSource.description}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">{dataSource.sampleTest}</span>
+                          <Badge variant="outline" className="text-xs">
+                            {dataSource.visibility}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">Active</Badge>
-                        <Button variant="ghost" size="sm">Revoke</Button>
+
+                      {/* Metadata Retrieval Status */}
+                      <div className="space-y-3 mb-4">
+                        <div className="text-sm font-medium text-foreground">
+                          Metadata Retrieval Status:
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Last Metadata Refresh: {dataSource.lastMetadataRefresh}
+                        </div>
+                        <div className="space-y-2">
+                          {Object.entries(dataSource.metadataStatus).map(([key, status]) => (
+                            <div key={key} className="flex items-center gap-2">
+                              {status === 'success' ? (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              ) : status === 'loading' ? (
+                                <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                              ) : (
+                                <Clock className="h-4 w-4 text-gray-400" />
+                              )}
+                              <span className="text-sm text-foreground capitalize">
+                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 pt-4 border-t border-border">
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="flex-1"
+                          onClick={() => handleEditDataSource(dataSource.id)}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          EDIT
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteDataSource(dataSource.id)}
+                        >
+                          <Trash className="h-4 w-4 mr-2" />
+                          DELETE
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* Domains Tab */}
+            <TabsContent value="domains" className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex-1 max-w-md">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search domains"
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Domain
+                </Button>
+              </div>
+              <Card className="empty-state-card">
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <div className="empty-state-icon">
+                    <Globe className="h-12 w-12 text-muted-foreground/50" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                    No Domains yet!
+                  </h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-md">
+                    Add your first domain to organize your data sources.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* API Tokens Tab */}
+            <TabsContent value="api-tokens" className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex-1 max-w-md">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search tokens"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Generate Token
+                </Button>
+              </div>
+              <Card className="empty-state-card">
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <div className="empty-state-icon">
+                    <Key className="h-12 w-12 text-muted-foreground/50" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                    No API Tokens yet!
+                  </h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-md">
+                    Generate your first API token to access this workspace programmatically.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Approval Tab */}
+            <TabsContent value="approval" className="space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex-1 max-w-md">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search approvals"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </div>
+              <Card className="empty-state-card">
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <div className="empty-state-icon">
+                    <CheckCircle className="h-12 w-12 text-muted-foreground/50" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">
+                    No Pending Approvals!
+                  </h3>
+                  <p className="text-sm text-muted-foreground text-center max-w-md">
+                    All items are up to date. No approvals needed at this time.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
+    </>
   );
 };

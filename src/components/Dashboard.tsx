@@ -9,6 +9,18 @@ import { WorkspaceForm, WorkspaceFormData } from "./WorkspaceForm";
 
 const workspaces = [
   {
+    id: "sample-123",
+    name: "sample",
+    organization: "D&AI",
+    tags: ["sample"],
+    description: "Sample workspace for testing",
+    publishedDate: "Aug 26, 2025",
+    lastModified: "May 22, 2025",
+    stats: { dataSource: 0, domain: 0, user: 1, pendingApproval: 0 },
+    isFavorite: true,
+    isApproved: true
+  },
+  {
     id: "kaurav-123",
     name: "Kaurav",
     organization: "D&AI",
