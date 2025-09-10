@@ -59,6 +59,62 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- React Router
+- React Query (TanStack Query)
+
+## Features
+
+### Create Workspace Functionality
+
+The application includes a comprehensive workspace creation system with the following features:
+
+#### Workspace Management
+- **Create New Workspaces**: Users can create new workspaces through a modal form
+- **Delete Workspaces**: Users can delete workspaces with confirmation dialog
+- **Workspace State Management**: Centralized state management using React Context
+- **Persistent Storage**: All workspace data persists across browser refreshes using localStorage
+- **Real-time Updates**: Dashboard stats and workspace lists update automatically
+- **Favorite Toggle**: Users can mark workspaces as favorites
+- **Search & Filter**: Search workspaces by name or description
+
+#### Data Connections
+- **CSV/Excel File Upload**: Upload and connect CSV or Excel files directly
+- **PostgreSQL Database**: Connect to PostgreSQL databases with secure authentication
+- **Connection Management**: View, manage, and monitor all workspace connections
+- **File Type Support**: Supports .csv, .xlsx, .xls, .ods file formats
+- **Database Features**: SSL support, connection testing, schema introspection
+- **Visual Connection Types**: Different icons and colors for different connection types
+
+#### Workspace Form Fields
+- **Workspace Name**: Required field for workspace identification
+- **Organization**: Required field for organizational grouping
+- **Description**: Required field for workspace details
+- **Tags**: Optional tags for categorization (add/remove functionality)
+- **Embedding Provider**: Required selection from available providers
+- **LLM Provider**: Required selection from available language models
+- **Visibility**: Choose between private or public workspace
+
+#### Dashboard Features
+- **Dynamic Stats**: Real-time statistics showing:
+  - Total workspaces count
+  - Approved workspaces count
+  - Favorite workspaces count
+  - Pending approval count
+- **Tabbed Interface**: Separate views for favorites, all workspaces, and users
+- **Responsive Design**: Mobile-friendly interface with adaptive layouts
+
+#### Technical Implementation
+- **Context API**: Centralized workspace state management
+- **Persistent Storage**: localStorage integration for data persistence
+- **Form State Persistence**: All connection forms maintain state across page refreshes
+- **Upload Progress Persistence**: File upload progress is preserved during interruptions
+- **Connection State Recovery**: Automatic recovery of connection forms and progress
+- **Type Safety**: Full TypeScript support with proper interfaces
+- **Form Validation**: Client-side validation with error handling
+- **Toast Notifications**: User feedback for successful operations
+- **Error Handling**: Graceful error handling with user-friendly messages
+- **Confirmation Dialogs**: Safe delete operations with user confirmation
+- **Loading States**: Visual feedback during async operations
 
 ## How can I deploy this project?
 

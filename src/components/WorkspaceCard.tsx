@@ -1,8 +1,12 @@
-import { Heart, CheckCircle, Calendar, Clock, Database, Globe, Users, AlertCircle } from "lucide-react";
+import { Heart, CheckCircle, Calendar, Clock, Database, Globe, Users, AlertCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useWorkspaces } from "@/contexts/WorkspaceContext";
+import { DeleteWorkspaceDialog } from "@/components/DeleteWorkspaceDialog";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface WorkspaceCardProps {
   id?: string;
@@ -35,6 +39,10 @@ export const WorkspaceCard = ({
   isApproved = true 
 }: WorkspaceCardProps) => {
   const navigate = useNavigate();
+  const { toggleFavorite, deleteWorkspace } = useWorkspaces();
+  const { toast } = useToast();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCardClick = () => {
     if (id) {
@@ -42,9 +50,59 @@ export const WorkspaceCard = ({
     }
   };
 
+  const handleFavoriteToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (id) {
+      toggleFavorite(id);
+    }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!id) return;
+    
+    setIsDeleting(true);
+    try {
+      const deletedWorkspace = deleteWorkspace(id);
+      if (deletedWorkspace) {
+        toast({
+          title: "Workspace Deleted",
+          description: `"${deletedWorkspace.name}" has been permanently deleted.`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete workspace. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the workspace.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
   return (
-    <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-border overflow-hidden cursor-pointer" onClick={handleCardClick}>
-      <CardContent className="p-0">
+    <>
+      <DeleteWorkspaceDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        workspaceName={name}
+        isLoading={isDeleting}
+      />
+      <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-border overflow-hidden cursor-pointer" onClick={handleCardClick}>
+        <CardContent className="p-0">
         {/* Header */}
         <div className="p-6 pb-4">
           <div className="flex justify-between items-start mb-4">
@@ -88,7 +146,7 @@ export const WorkspaceCard = ({
                 className={`h-8 w-8 p-0 hover:bg-accent transition-colors ${
                   isFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"
                 }`}
-                onClick={(e) => e.stopPropagation()}
+                onClick={handleFavoriteToggle}
               >
                 <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
               </Button>
@@ -165,17 +223,29 @@ export const WorkspaceCard = ({
             >
               View Details
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-xs h-8 border-border/50 hover:border-border"
-              onClick={(e) => e.stopPropagation()}
-            >
-              Edit
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs h-8 border-border/50 hover:border-border"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Edit
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleDeleteClick}
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete
+              </Button>
+            </div>
           </div>
         </div>
       </CardContent>
     </Card>
+    </>
   );
 };

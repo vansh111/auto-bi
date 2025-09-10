@@ -17,7 +17,8 @@ import {
   Edit,
   Trash,
   Zap,
-  Loader2
+  Loader2,
+  FileSpreadsheet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,67 +26,22 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import DatasourceOnboarding from "@/components/DatasourceOnboarding";
-
-// Mock workspace data - in real app this would come from API
-const mockWorkspace = {
-  id: "sample-123",
-  name: "sample",
-  organization: "D&AI",
-  tags: ["sample"],
-  description: "Sample workspace for testing",
-  publishedDate: "Aug 26, 2025",
-  lastModified: "May 22, 2025",
-  stats: { dataSource: 0, domain: 0, user: 1, pendingApproval: 0 },
-  isFavorite: true,
-  isApproved: true,
-  visibility: "private"
-};
-
-// Mock video call participants
-const participants = [
-  {
-    id: 1,
-    name: "Kushagra Sharma",
-    avatar: "KS",
-    isOnline: true,
-    hasVideo: true
-  },
-  {
-    id: 2,
-    name: "Vansh Aggarwal",
-    avatar: "VA",
-    isOnline: true,
-    hasVideo: true
-  },
-  {
-    id: 3,
-    name: "Srilikhita Balla",
-    avatar: "SB",
-    isOnline: true,
-    hasVideo: false
-  },
-  {
-    id: 4,
-    name: "Rahul Gupta",
-    avatar: "RG",
-    isOnline: true,
-    hasVideo: true
-  },
-  {
-    id: 5,
-    name: "Ayush Rajput",
-    avatar: "AR",
-    isOnline: true,
-    hasVideo: false
-  }
-];
+import { useWorkspaces } from "@/contexts/WorkspaceContext";
+import { useToast } from "@/hooks/use-toast";
+import { DeleteWorkspaceDialog } from "@/components/DeleteWorkspaceDialog";
+import { ConnectionTypeSelector } from "@/components/ConnectionTypeSelector";
 
 export default function WorkspaceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { getWorkspaceById, toggleFavorite, updateWorkspace, deleteWorkspace } = useWorkspaces();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("connections");
   const [searchTerm, setSearchTerm] = useState("");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showConnectionSelector, setShowConnectionSelector] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [connections, setConnections] = useState<any[]>([]);
   const [dataSources, setDataSources] = useState<any[]>([
     {
@@ -192,6 +148,32 @@ export default function WorkspaceDetail() {
     }
   ]);
 
+  // Get the workspace data based on the ID from URL
+  const workspace = id ? getWorkspaceById(id) : null;
+
+  // Redirect to dashboard if workspace not found
+  useEffect(() => {
+    if (id && !workspace) {
+      toast({
+        title: "Workspace Not Found",
+        description: "The requested workspace could not be found.",
+        variant: "destructive",
+      });
+      navigate("/");
+    }
+  }, [id, workspace, navigate, toast]);
+
+  if (!workspace) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Loading...</h2>
+          <p className="text-muted-foreground">Fetching workspace details...</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleBack = () => {
     navigate("/");
   };
@@ -201,11 +183,48 @@ export default function WorkspaceDetail() {
   };
 
   const handleDelete = () => {
-    console.log("Delete workspace");
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!workspace?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      const deletedWorkspace = deleteWorkspace(workspace.id);
+      if (deletedWorkspace) {
+        toast({
+          title: "Workspace Deleted",
+          description: `"${deletedWorkspace.name}" has been permanently deleted.`,
+        });
+        navigate("/");
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete workspace. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the workspace.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
   };
 
   const handleFavorite = () => {
-    console.log("Toggle favorite");
+    if (workspace.id) {
+      toggleFavorite(workspace.id);
+      toast({
+        title: workspace.isFavorite ? "Removed from Favorites" : "Added to Favorites",
+        description: `"${workspace.name}" has been ${workspace.isFavorite ? 'removed from' : 'added to'} your favorites.`,
+      });
+    }
   };
 
   const handleConnectionComplete = (connectionData: any) => {
@@ -229,6 +248,21 @@ export default function WorkspaceDetail() {
           onConnectionComplete={handleConnectionComplete}
         />
       )}
+      
+      {showConnectionSelector && (
+        <ConnectionTypeSelector
+          onClose={() => setShowConnectionSelector(false)}
+          onConnectionComplete={handleConnectionComplete}
+        />
+      )}
+      
+      <DeleteWorkspaceDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleConfirmDelete}
+        workspaceName={workspace?.name || ""}
+        isLoading={isDeleting}
+      />
       <div className="min-h-screen bg-background text-foreground">
         {/* Header */}
       <div className="bg-card/80 backdrop-blur-sm border-b border-border/50 sticky top-0 z-50">
@@ -247,7 +281,7 @@ export default function WorkspaceDetail() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Owned Workspace</span>
               <span>•</span>
-              <span className="text-foreground font-medium">{mockWorkspace.name}</span>
+              <span className="text-foreground font-medium">{workspace.name}</span>
             </div>
           </div>
           
@@ -271,17 +305,17 @@ export default function WorkspaceDetail() {
             <div className="flex items-start justify-between mb-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold text-foreground">{mockWorkspace.name}</h1>
+                  <h1 className="text-3xl font-bold text-foreground">{workspace.name}</h1>
                   <Badge variant="secondary" className="text-sm">
-                    {mockWorkspace.name}
+                    {workspace.organization}
                   </Badge>
                 </div>
                 <p className="text-muted-foreground mb-2">
-                  Organization: <span className="font-semibold text-foreground">{mockWorkspace.organization}</span>
+                  Organization: <span className="font-semibold text-foreground">{workspace.organization}</span>
                 </p>
-                <p className="text-muted-foreground mb-2">{mockWorkspace.name}</p>
+                <p className="text-muted-foreground mb-2">{workspace.description}</p>
                 <p className="text-sm text-muted-foreground">
-                  Published on: {mockWorkspace.publishedDate} | Last modified on: {mockWorkspace.lastModified}
+                  Published on: {workspace.publishedDate} | Last modified on: {workspace.lastModified}
                 </p>
               </div>
               <Button
@@ -289,10 +323,10 @@ export default function WorkspaceDetail() {
                 size="sm"
                 onClick={handleFavorite}
                 className={`h-10 w-10 p-0 ${
-                  mockWorkspace.isFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"
+                  workspace.isFavorite ? "text-destructive hover:text-destructive" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <Heart className={`h-5 w-5 ${mockWorkspace.isFavorite ? 'fill-current' : ''}`} />
+                <Heart className={`h-5 w-5 ${workspace.isFavorite ? 'fill-current' : ''}`} />
               </Button>
             </div>
 
@@ -300,25 +334,25 @@ export default function WorkspaceDetail() {
             <div className="grid grid-cols-4 gap-6 mb-8">
               <div className="text-center">
                 <div className="text-3xl font-bold text-foreground mb-1">
-                  {mockWorkspace.stats.dataSource}
+                  {workspace.stats.dataSource}
                 </div>
                 <div className="text-sm text-muted-foreground">Data source</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-foreground mb-1">
-                  {mockWorkspace.stats.domain}
+                  {workspace.stats.domain}
                 </div>
                 <div className="text-sm text-muted-foreground">Domain</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-foreground mb-1">
-                  {mockWorkspace.stats.user}
+                  {workspace.stats.user}
                 </div>
                 <div className="text-sm text-muted-foreground">User</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-foreground mb-1">
-                  {mockWorkspace.stats.pendingApproval}
+                  {workspace.stats.pendingApproval}
                 </div>
                 <div className="text-sm text-muted-foreground">Pending Approval</div>
               </div>
@@ -329,13 +363,13 @@ export default function WorkspaceDetail() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="workspace-tabs space-y-6">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="connections" className="flex items-center gap-2">
-                CONNECTIONS ({mockWorkspace.stats.dataSource})
+                CONNECTIONS ({workspace.stats.dataSource})
               </TabsTrigger>
               <TabsTrigger value="data-sources" className="flex items-center gap-2">
                 DATA SOURCES ({dataSources.length})
               </TabsTrigger>
               <TabsTrigger value="domains" className="flex items-center gap-2">
-                DOMAINS ({mockWorkspace.stats.domain})
+                DOMAINS ({workspace.stats.domain})
               </TabsTrigger>
               <TabsTrigger value="api-tokens" className="flex items-center gap-2">
                 CLIENT API TOKENS
@@ -363,9 +397,9 @@ export default function WorkspaceDetail() {
                   <Button variant="outline" size="sm">
                     <Filter className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" onClick={() => setShowOnboarding(true)}>
+                  <Button size="sm" onClick={() => setShowConnectionSelector(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add
+                    Add Connection
                   </Button>
                 </div>
               </div>
@@ -379,9 +413,13 @@ export default function WorkspaceDetail() {
                     <h3 className="text-lg font-semibold text-muted-foreground mb-2">
                       No Connections yet!
                     </h3>
-                    <p className="text-sm text-muted-foreground text-center max-w-md">
-                      Get started by adding your first connection to this workspace.
+                    <p className="text-sm text-muted-foreground text-center max-w-md mb-4">
+                      Get started by adding your first connection to this workspace. You can connect CSV/Excel files or PostgreSQL databases.
                     </p>
+                    <Button onClick={() => setShowConnectionSelector(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Connection
+                    </Button>
                   </CardContent>
                 </Card>
               ) : (
@@ -391,22 +429,31 @@ export default function WorkspaceDetail() {
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                              {connection.type === 'postgres' ? (
-                                <div className="text-2xl">🐘</div>
-                              ) : connection.type === 'bigquery' ? (
-                                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                                  <span className="text-white font-bold text-sm">Q</span>
-                                </div>
+                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                              connection.type === 'postgresql' 
+                                ? 'bg-green-100' 
+                                : connection.type === 'csv-excel'
+                                ? 'bg-blue-100'
+                                : 'bg-gray-100'
+                            }`}>
+                              {connection.type === 'postgresql' ? (
+                                <Database className="h-6 w-6 text-green-600" />
+                              ) : connection.type === 'csv-excel' ? (
+                                <FileSpreadsheet className="h-6 w-6 text-blue-600" />
                               ) : (
-                                <Database className="h-6 w-6 text-blue-600" />
+                                <Database className="h-6 w-6 text-gray-600" />
                               )}
                             </div>
                             <div>
                               <h3 className="font-semibold text-foreground">{connection.name}</h3>
                               <p className="text-sm text-muted-foreground">
-                                {connection.source} • {connection.tables.length} tables
+                                {connection.source} • {connection.tables?.length || connection.files || 0} {connection.type === 'csv-excel' ? 'files' : 'tables'}
                               </p>
+                              {connection.type === 'postgresql' && connection.host && (
+                                <p className="text-xs text-muted-foreground">
+                                  {connection.host}:{connection.port}/{connection.database}
+                                </p>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">

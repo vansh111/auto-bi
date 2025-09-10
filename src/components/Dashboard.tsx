@@ -6,83 +6,41 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WorkspaceCard } from "./WorkspaceCard";
 import { WorkspaceForm, WorkspaceFormData } from "./WorkspaceForm";
-
-const workspaces = [
-  {
-    id: "sample-123",
-    name: "sample",
-    organization: "D&AI",
-    tags: ["sample"],
-    description: "Sample workspace for testing",
-    publishedDate: "Aug 26, 2025",
-    lastModified: "May 22, 2025",
-    stats: { dataSource: 0, domain: 0, user: 1, pendingApproval: 0 },
-    isFavorite: true,
-    isApproved: true
-  },
-  {
-    id: "kaurav-123",
-    name: "Kaurav",
-    organization: "D&AI",
-    tags: ["test", "dummy"],
-    description: "Some Desc, something",
-    publishedDate: "Apr 10, 2025",
-    lastModified: "Apr 10, 2025",
-    stats: { dataSource: 11, domain: 2, user: 1, pendingApproval: 1 },
-    isFavorite: true,
-    isApproved: true
-  },
-  {
-    id: "shilpa-456",
-    name: "Shilpa",
-    organization: "D&AI",
-    tags: ["sampleschemas"],
-    description: "My own workspace",
-    publishedDate: "Apr 10, 2025",
-    lastModified: "May 15, 2025",
-    stats: { dataSource: 355, domain: 1, user: 1, pendingApproval: 2 },
-    isFavorite: true,
-    isApproved: true
-  },
-  {
-    id: "bq-workspace-789",
-    name: "BQ workspace",
-    organization: "D&AI",
-    tags: ["def"],
-    description: "dslfireyvugsiufbdj",
-    publishedDate: "May 19, 2025",
-    lastModified: "May 19, 2025",
-    stats: { dataSource: 3, domain: 1, user: 1, pendingApproval: 0 },
-    isFavorite: true,
-    isApproved: true
-  },
-  {
-    id: "luffy-012",
-    name: "Luffy",
-    organization: "D&AI",
-    tags: ["autobi"],
-    description: "This is autoBi DB workspace",
-    publishedDate: "Apr 10, 2025",
-    lastModified: "May 19, 2025",
-    stats: { dataSource: 93, domain: 5, user: 2, pendingApproval: 0 },
-    isFavorite: true,
-    isApproved: true
-  }
-];
+import { useWorkspaces } from "@/contexts/WorkspaceContext";
+import { useToast } from "@/hooks/use-toast";
 
 export const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const { workspaces, addWorkspace } = useWorkspaces();
+  const { toast } = useToast();
 
   const filteredWorkspaces = workspaces.filter(workspace =>
     workspace.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     workspace.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const favoriteWorkspaces = workspaces.filter(workspace => workspace.isFavorite);
+  const filteredFavoriteWorkspaces = favoriteWorkspaces.filter(workspace =>
+    workspace.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    workspace.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleCreateWorkspace = (workspaceData: WorkspaceFormData) => {
-    console.log("Creating new workspace:", workspaceData);
-    // Here you would typically make an API call to create the workspace
-    // For now, we'll just log the data
+    try {
+      const newWorkspace = addWorkspace(workspaceData);
+      toast({
+        title: "Workspace Created Successfully!",
+        description: `"${newWorkspace.name}" has been created and is pending approval.`,
+      });
+      setIsFormOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error Creating Workspace",
+        description: "There was an error creating the workspace. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -111,7 +69,7 @@ export const Dashboard = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Workspaces</p>
-              <p className="text-2xl font-bold text-foreground">38</p>
+              <p className="text-2xl font-bold text-foreground">{workspaces.length}</p>
             </div>
           </div>
         </div>
@@ -122,8 +80,8 @@ export const Dashboard = () => {
               <TrendingUp className="h-5 w-5 text-success" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Active Projects</p>
-              <p className="text-2xl font-bold text-foreground">24</p>
+              <p className="text-sm text-muted-foreground">Approved Workspaces</p>
+              <p className="text-2xl font-bold text-foreground">{workspaces.filter(w => w.isApproved).length}</p>
             </div>
           </div>
         </div>
@@ -134,8 +92,8 @@ export const Dashboard = () => {
               <Users className="h-5 w-5 text-warning" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Team Members</p>
-              <p className="text-2xl font-bold text-foreground">25</p>
+              <p className="text-sm text-muted-foreground">Favorite Workspaces</p>
+              <p className="text-2xl font-bold text-foreground">{workspaces.filter(w => w.isFavorite).length}</p>
             </div>
           </div>
         </div>
@@ -147,7 +105,7 @@ export const Dashboard = () => {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Pending Approval</p>
-              <p className="text-2xl font-bold text-foreground">3</p>
+              <p className="text-2xl font-bold text-foreground">{workspaces.filter(w => !w.isApproved).length}</p>
             </div>
           </div>
         </div>
@@ -160,20 +118,20 @@ export const Dashboard = () => {
               <div className="flex flex-col items-center gap-1">
                 <span className="leading-tight tab-text-safe">FAVOURITE</span>
                 <span className="leading-tight tab-text-safe">WORKSPACE</span>
-                <Badge variant="secondary" className="text-xs tab-badge-safe">6</Badge>
+                <Badge variant="secondary" className="text-xs tab-badge-safe">{favoriteWorkspaces.length}</Badge>
               </div>
             </TabsTrigger>
             <TabsTrigger value="all" className="text-xs font-medium px-2 py-3 h-auto min-h-[4rem] tab-multiline">
               <div className="flex flex-col items-center gap-1">
                 <span className="leading-tight tab-text-safe">ALL</span>
                 <span className="leading-tight tab-text-safe">WORKSPACE</span>
-                <Badge variant="secondary" className="text-xs tab-badge-safe">38</Badge>
+                <Badge variant="secondary" className="text-xs tab-badge-safe">{workspaces.length}</Badge>
               </div>
             </TabsTrigger>
             <TabsTrigger value="users" className="text-xs font-medium px-2 py-3 h-auto min-h-[4rem] tab-multiline">
               <div className="flex flex-col items-center gap-1">
                 <span className="leading-tight tab-text-safe">USERS</span>
-                <Badge variant="secondary" className="text-xs tab-badge-safe">25</Badge>
+                <Badge variant="secondary" className="text-xs tab-badge-safe">{workspaces.reduce((sum, w) => sum + w.stats.user, 0)}</Badge>
               </div>
             </TabsTrigger>
           </TabsList>
@@ -196,16 +154,16 @@ export const Dashboard = () => {
         
         <TabsContent value="favourite" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredWorkspaces.map((workspace, index) => (
-              <WorkspaceCard key={index} {...workspace} />
+            {filteredFavoriteWorkspaces.map((workspace, index) => (
+              <WorkspaceCard key={workspace.id} {...workspace} />
             ))}
           </div>
         </TabsContent>
         
         <TabsContent value="all" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredWorkspaces.map((workspace, index) => (
-              <WorkspaceCard key={index} {...workspace} />
+            {filteredWorkspaces.map((workspace) => (
+              <WorkspaceCard key={workspace.id} {...workspace} />
             ))}
           </div>
         </TabsContent>
